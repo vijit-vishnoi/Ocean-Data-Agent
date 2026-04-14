@@ -1,0 +1,10 @@
+duckdb
+faiss-cpu
+pandas
+sentence-transformers
+groq
+fastapi
+uvicorn
+streamlit
+numpy
+matplotlib

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ocean Data Chatbot</title>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #1e2125;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .chat-container {
+            max-width: 800px;
+            width: 90%;
+            height: 80vh;
+            background: #2a2e33;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            margin: 20px;
+            overflow: hidden;
+        }
+        .chat-header {
+            background-color: #1a3c6e;
+            color: #fff;
+            padding: 15px;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 600;
+            border-bottom: 1px solid #3a3f47;
+        }
+        .chat-window {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #4a90e2 #2a2e33;
+        }
+        .chat-window::-webkit-scrollbar {
+            width: 8px;
+        }
+        .chat-window::-webkit-scrollbar-track {
+            background: #2a2e33;
+        }
+        .chat-window::-webkit-scrollbar-thumb {
+            background: #4a90e2;
+            border-radius: 4px;
+        }
+        .message {
+            margin: 10px 0;
+            display: flex;
+            align-items: flex-start;
+            max-width: 80%;
+        }
+        .user-message {
+            justify-content: flex-end;
+            margin-left: auto;
+        }
+        .bot-message {
+            justify-content: flex-start;
+        }
+        .message-bubble {
+            padding: 12px 18px;
+            border-radius: 12px;
+            font-size: 1rem;
+            line-height: 1.5;
+            position: relative;
+        }
+        .user-message .message-bubble {
+            background-color: #4a90e2;
+            color: #fff;
+            border-bottom-right-radius: 4px;
+        }
+        .bot-message .message-bubble {
+            background-color: #3a3f47;
+            color: #e0e0e0;
+            border-bottom-left-radius: 4px;
+        }
+        .message-timestamp {
+            font-size: 0.75rem;
+            color: #a0a0a0;
+            margin: 5px 10px;
+        }
+        .bot-message img {
+            max-width: 100%;
+            border-radius: 8px;
+            margin-top: 10px;
+            display: block;
+        }
+        .chat-input {
+            display: flex;
+            padding: 15px;
+            background-color: #2a2e33;
+            border-top: 1px solid #3a3f47;
+        }
+        .chat-input input {
+            flex: 1;
+            padding: 12px;
+            font-size: 1rem;
+            border: 1px solid #4a90e2;
+            border-radius: 8px 0 0 8px;
+            background-color: #33373d;
+            color: #e0e0e0;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+        .chat-input input:focus {
+            border-color: #50c8b4;
+        }
+        .chat-input button {
+            padding: 12px 20px;
+            background-color: #4a90e2;
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 0 8px 8px 0;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        .chat-input button:hover {
+            background-color: #50c8b4;
+            transform: translateY(-1px);
+        }
+        .chat-input button:active {
+            transform: translateY(0);
+        }
+        @media (max-width: 600px) {
+            .chat-container {
+                width: 95%;
+                height: 90vh;
+            }
+            .chat-header {
+                font-size: 1.2rem;
+            }
+            .message-bubble {
+                font-size: 0.9rem;
+                padding: 10px 14px;
+            }
+            .chat-input input {
+                font-size: 0.9rem;
+            }
+            .chat-input button {
+                font-size: 0.9rem;
+                padding: 10px 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">Ocean Data Chatbot</div>
+        <div class="chat-window" id="chat-window">
+            <div class="bot-message">
+                <div class="message-bubble">Hi! I'm your Ocean Data Chatbot. Ask me about ocean data, like salinity trends or general oceanography questions!</div>
+                <div class="message-timestamp" id="welcome-timestamp"></div>
+            </div>
+        </div>
+        <div class="chat-input">
+            <input type="text" id="query" placeholder="Type your question (e.g., 'salinity trend in March 2019')">
+            <button onclick="submitQuery()">Send</button>
+        </div>
+    </div>
+
+    <script>
+        // Set welcome message timestamp
+        function formatTimestamp() {
+            const now = new Date();
+            return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+        document.getElementById('welcome-timestamp').textContent = formatTimestamp();
+
+        async function submitQuery() {
+            const queryInput = document.getElementById('query');
+            const query = queryInput.value.trim();
+            if (!query) return;
+
+            const chatWindow = document.getElementById('chat-window');
+
+            // Add user message
+            const userMessage = document.createElement('div');
+            userMessage.className = 'message user-message';
+            userMessage.innerHTML = `
+                <div class="message-bubble">${query}</div>
+                <div class="message-timestamp">${formatTimestamp()}</div>
+            `;
+            chatWindow.appendChild(userMessage);
+
+            // Clear input
+            queryInput.value = '';
+
+            // Show loading message
+            const loadingMessage = document.createElement('div');
+            loadingMessage.className = 'bot-message';
+            loadingMessage.innerHTML = `
+                <div class="message-bubble">Thinking...</div>
+                <div class="message-timestamp">${formatTimestamp()}</div>
+            `;
+            chatWindow.appendChild(loadingMessage);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+
+            try {
+                const response = await fetch('/query', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query })
+                });
+                const data = await response.json();
+
+                // Remove loading message
+                chatWindow.removeChild(loadingMessage);
+
+                // Add bot response
+                const botMessage = document.createElement('div');
+                botMessage.className = 'bot-message';
+                botMessage.innerHTML = `
+                    <div class="message-bubble">${data.summary}</div>
+                    <div class="message-timestamp">${formatTimestamp()}</div>
+                `;
+                chatWindow.appendChild(botMessage);
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+            } catch (error) {
+                // Remove loading message
+                chatWindow.removeChild(loadingMessage);
+
+                // Show error message
+                const errorMessage = document.createElement('div');
+                errorMessage.className = 'bot-message';
+                errorMessage.innerHTML = `
+                    <div class="message-bubble">Sorry, something went wrong. Please try again!</div>
+                    <div class="message-timestamp">${formatTimestamp()}</div>
+                `;
+                chatWindow.appendChild(errorMessage);
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+            }
+        }
+
+        // Submit on Enter key
+        document.getElementById('query').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                submitQuery();
+            }
+        });
+    </script>
+</body>
+</html>
