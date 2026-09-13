@@ -1,10 +1,10 @@
-duckdb
-faiss-cpu
-pandas
-sentence-transformers
-groq
 fastapi
 uvicorn
-streamlit
+duckdb
+faiss-cpu
+sentence-transformers
+groq
+pandas
 numpy
 matplotlib
+python-dotenv

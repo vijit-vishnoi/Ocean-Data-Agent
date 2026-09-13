@@ -1,6 +1,12 @@
 import streamlit as st
 import requests
 import base64
+import os
+
+try:
+    API_URL = st.secrets.get("API_URL", os.getenv("API_URL", "http://127.0.0.1:8000"))
+except Exception:
+    API_URL = os.getenv("API_URL", "http://127.0.0.1:8000")
 
 st.set_page_config(page_title="Argo Ocean Agent", layout="wide")
 
@@ -36,7 +42,7 @@ if st.button("Run Query"):
                     "query": query,
                     "top_k": top_k
                 }
-                resp = requests.post("http://127.0.0.1:8000/query", json=payload)
+                resp = requests.post(f"{API_URL}/query", json=payload)
                 
                 if resp.status_code == 200:
                     data = resp.json()
