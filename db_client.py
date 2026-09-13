@@ -1,5 +1,6 @@
 import duckdb
 import re
+import time
 import pandas as pd
 from exceptions import DatabaseExecutionError
 from logger import get_logger
@@ -74,7 +75,11 @@ class DuckDBClient:
         adjusted_sql = self.adjust_sql_for_time_cast(sql_query)
         try:
             logger.info(f"Executing SQL query: {adjusted_sql}")
+            start_time = time.perf_counter()
             df = self.con.execute(adjusted_sql).df()
+            end_time = time.perf_counter()
+            execution_time_ms = (end_time - start_time) * 1000
+            logger.info(f"DuckDB isolated execution time: {execution_time_ms:.2f} ms")
             return df
         except Exception as e:
             logger.error(f"SQL execution error: {e}")
