@@ -89,4 +89,5 @@ def query_pipeline(user_query: str, top_k: int = 20) -> Dict[str, Any]:
     finally:
         result["debug_latency_ms"] = round((time.time() - start_time) * 1000, 2)
         logger.info(f"Pipeline completed in {result['debug_latency_ms']} ms")
-        return result
+        
+    return result
