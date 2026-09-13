@@ -1,34 +1,30 @@
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
 from pipeline import query_pipeline
-import pandas as pd
 
-app = FastAPI()
+app = FastAPI(title="Ocean-Bot API")
 templates = Jinja2Templates(directory="templates")
+
+class QueryRequest(BaseModel):
+    query: str
+    top_k: int = 20
 
 @app.get("/", response_class=HTMLResponse)
 def read_root(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    """Serve the root HTML page (if any)."""
+    return templates.TemplateResponse(request=request, name="index.html")
 
 @app.post("/query")
-def run_query(payload: dict):
-    user_query = payload.get("query", "")
-    output = query_pipeline(user_query)
+def run_query(payload: QueryRequest):
+    """
+    Executes the Text-to-SQL and RAG pipeline.
+    
+    Returns a JSON payload with the summary, base64 charts, and debug info.
+    """
+    if not payload.query.strip():
+        return JSONResponse(status_code=400, content={"error": "Query cannot be empty."})
 
-    if isinstance(output, dict) and "error" in output:
-        summary = output.get("summary", "An error occurred while processing the query.")
-        line_plot_base64 = None
-        step_plot_base64 = None
-    else:
-        df, sql_text, raw_llm, retrieved_ctx, summary, line_plot_base64, step_plot_base64 = output
-
-    paragraphs = summary.split("\n\n")
-    formatted_summary = "".join(f"<p>{p}</p>" for p in paragraphs if p.strip())
-
-    if line_plot_base64:
-        formatted_summary += f'<img src="data:image/png;base64,{line_plot_base64}" alt="Line Chart" style="max-width:100%; display:block; margin:20px auto;">'
-    if step_plot_base64:
-        formatted_summary += f'<img src="data:image/png;base64,{step_plot_base64}" alt="Step Chart" style="max-width:100%; display:block; margin:20px auto;">'
-
-    return {"summary": formatted_summary}
+    output = query_pipeline(payload.query, top_k=payload.top_k)
+    return output
