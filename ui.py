@@ -8,6 +8,10 @@ try:
 except Exception:
     API_URL = os.getenv("API_URL", "http://127.0.0.1:8000")
 
+st.set_page_config(
+    page_title="Argo Ocean Data Agent",
+    page_icon="🌊"
+)
 st.set_page_config(page_title="Argo Ocean Agent", layout="wide")
 
 with st.sidebar:
