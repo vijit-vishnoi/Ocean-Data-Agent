@@ -4,7 +4,8 @@
 
 An AI-powered, RAG-based Text-to-SQL agent that allows users to ask plain-English questions about real-world oceanographic data (temperature, salinity, depth) and generates analytical summaries with charts.
 
-![Argo Ocean Data Agent UI](image_6fed8a.png)
+![Argo Ocean Data Agent UI](<img width="1916" height="910" alt="Screenshot 2026-09-14 150025" src="https://github.com/user-attachments/assets/b9c70731-ecb4-4206-8e4a-7422968d733f" />
+)
 
 ---
 
