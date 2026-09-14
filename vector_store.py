@@ -16,7 +16,7 @@ def get_huggingface_embedding(query: str, model_name: str) -> np.ndarray:
     if not api_key:
         raise ValueError("Missing HUGGINGFACE_API_KEY or HF_TOKEN environment variable.")
     
-    url = f"https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/{model_name}"
+    url = f"https://router.huggingface.co/hf-inference/models/sentence-transformers/{model_name}/pipeline/feature-extraction"
     headers = {"Authorization": f"Bearer {api_key}"}
     
     response = requests.post(url, headers=headers, json={"inputs": [query]})
