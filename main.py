@@ -2,22 +2,20 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.templating import Jinja2Templates
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from pipeline import query_pipeline
 
 app = FastAPI(title="Ocean-Bot API")
-templates = Jinja2Templates(directory="templates")
 
 class QueryRequest(BaseModel):
     query: str
     top_k: int = 20
 
-@app.get("/", response_class=HTMLResponse)
-def read_root(request: Request):
-    """Serve the root HTML page (if any)."""
-    return templates.TemplateResponse(request=request, name="index.html")
+@app.get("/")
+def read_root():
+    """Serve a simple health check."""
+    return {"status": "Ocean-Bot API is running"}
 
 @app.post("/query")
 def run_query(payload: QueryRequest):
