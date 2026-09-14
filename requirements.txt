@@ -1,10 +1,9 @@
 fastapi
 uvicorn
 duckdb
-faiss-cpu
-sentence-transformers
 groq
 pandas
 numpy
 matplotlib
 python-dotenv
+requests
