@@ -1,6 +1,18 @@
 # 🌊 Argo Ocean Data Agent
 
+**[Live Demo](https://llnqqsgtx2ecnarzxkxitw.streamlit.app/)**
+
 An AI-powered, RAG-based Text-to-SQL agent that allows users to ask plain-English questions about real-world oceanographic data (temperature, salinity, depth) and generates analytical summaries with charts.
+
+![Argo Ocean Data Agent UI](image_6fed8a.png)
+
+---
+
+## 🏗️ Architecture & Cloud Deployment
+
+The project is structured around a decoupled, serverless-ready architecture designed for free-tier cloud deployment:
+- **FastAPI Backend (Render)**: Acts as a REST API managing the DuckDB analytical queries, NumPy vector similarity search, and LLM routing/summarization logic. The removal of heavy ML libraries ensures the application runs easily within Render's 512MB RAM limit.
+- **Streamlit Frontend (Streamlit Community Cloud)**: A lightweight UI that handles user inputs and dynamically renders the JSON responses, charts, and debug metrics returned by the live deployed backend.
 
 ---
 
@@ -10,8 +22,8 @@ An AI-powered, RAG-based Text-to-SQL agent that allows users to ask plain-Englis
 |-------|-------------|
 | **Frontend** | Streamlit |
 | **Backend** | FastAPI, Python |
-| **Database & Search** | DuckDB, FAISS |
-| **AI / LLM** | LLaMA-3.3 (via Groq), SentenceTransformers |
+| **Database & Search** | DuckDB, NumPy (for local vector math) |
+| **AI / LLM** | LLaMA-3.3 (via Groq), Hugging Face Inference API (for serverless embeddings) |
 
 ---
 
@@ -26,11 +38,27 @@ python -m venv venv
 venv\Scripts\activate   # Windows
 # source venv/bin/activate  # Mac/Linux
 pip install -r requirements.txt
+pip install -r requirements-ui.txt
 ```
 
----
+### 2. Configure Local Environment Variables
 
-### 2. Generate the Data
+Create the required configuration files for both backend and frontend:
+
+**Backend (`.env`)**
+Create a `.env` file in the root directory:
+```ini
+GROQ_API_KEY=your_groq_api_key_here
+HUGGINGFACE_API_KEY=your_hf_token_here
+```
+
+**Frontend (`.streamlit/secrets.toml`)**
+Create a `.streamlit/secrets.toml` file in the root directory:
+```toml
+API_URL = "http://127.0.0.1:8000"
+```
+
+### 3. Generate the Data
 
 You must build the local database before starting the server. Run the fetch script to download live data from the Argo program:
 
@@ -38,9 +66,7 @@ You must build the local database before starting the server. Run the fetch scri
 python fetch_real_data.py
 ```
 
----
-
-### 3. Start the Servers
+### 4. Start the Servers
 
 Open **two terminals** and run the following:
 
