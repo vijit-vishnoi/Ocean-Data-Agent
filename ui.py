@@ -63,7 +63,7 @@ if st.button("Run Query"):
                         def decode_and_render_image(b64_str, col, caption):
                             if b64_str:
                                 image_bytes = base64.b64decode(b64_str)
-                                col.image(image_bytes, caption=caption, use_container_width=True)
+                                col.image(image_bytes, caption=caption, width="stretch")
                                 
                         decode_and_render_image(data.get("line_chart_b64"), col1, "Line Chart")
                         decode_and_render_image(data.get("step_chart_b64"), col2, "Step Chart")

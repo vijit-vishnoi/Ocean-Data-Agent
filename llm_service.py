@@ -1,7 +1,9 @@
 import os
 import re
+import json
 import pandas as pd
 from typing import List, Dict, Any, Optional
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from groq import Groq
 from dotenv import load_dotenv
 
@@ -10,6 +12,19 @@ from logger import get_logger
 
 load_dotenv()
 logger = get_logger(__name__)
+
+STRICT_SCHEMA_MODELS = {"openai/gpt-oss-120b", "openai/gpt-oss-20b"}
+
+class SQLQueryResponse(BaseModel):
+    """Schema-constrained output for Text-to-SQL generation."""
+    model_config = ConfigDict(extra="forbid")
+
+    sql: str = Field(
+        description="A single valid DuckDB SELECT query answering the user's question."
+    )
+    reasoning: str = Field(
+        description="Brief one-sentence explanation of how the query answers the question."
+    )
 
 class LLMService:
     """Service for handling interactions with the Groq LLM API."""
@@ -44,7 +59,7 @@ class LLMService:
             'salinity', 'temperature', 'temp', 'depth', 'pressure', 'trend', 'average', 'min', 'max',
             'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september',
             'october', 'november', 'december', '2018', '2019', '2020', '2021', '2022', '2023',
-            '2024', '2025', 'profile', 'latitude', 'longitude', 'platform'
+            '2024', '2025','2026', 'profile', 'latitude', 'longitude', 'platform'
         ]
         return not any(keyword in query for keyword in specific_keywords)
 
@@ -114,17 +129,7 @@ class LLMService:
 
     def generate_sql_query(self, user_query: str, context_text: str) -> tuple[str, str]:
         """
-        Generates a DuckDB SQL query based on the user's question and retrieved context.
-        
-        Args:
-            user_query (str): The user's question.
-            context_text (str): Retrieved context from the vector store.
-            
-        Returns:
-            Tuple[str, str]: A tuple containing the raw LLM output and the sanitized SQL string.
-            
-        Raises:
-            LLMGenerationError: If the LLM call fails.
+        Generates a DuckDB SQL query using schema-constrained JSON output.
         """
         schema_text = (
             "Schema Overview:\n"
@@ -136,16 +141,28 @@ class LLMService:
 
         system_msg = (
             "You are an expert Data Engineer specializing in DuckDB SQL syntax. "
-            "Your task is to generate exactly ONE valid SQL query that answers the user's question, using the provided schema and context. "
+            "Generate exactly ONE valid DuckDB SELECT query that answers the user's question using the provided schema and context.\n"
             "STRICT RULES:\n"
-            "1. Output ONLY the SQL query. Do not provide explanations, markdown formatting (other than the sql code block), or conversational text.\n"
+            "1. Return a valid JSON object matching the schema with keys 'sql' and 'reasoning'.\n"
             "2. Use CAST(profiles.time AS TIMESTAMP) for any time-based filtering or extraction.\n"
             "3. Use `measurements.psal` for salinity and `measurements.temp` for temperature.\n"
             "4. There is no 'pressure' column; use `depth_m` as an approximation (1 dbar ≈ 1 meter).\n"
-            "5. Ensure proper parentheses and standard SQL best practices."
+            "5. Do not include markdown code fences inside the 'sql' string."
         )
 
         user_msg = f"{schema_text}Retrieved Context:\n{context_text}\n\nUser Question: {user_query}"
+
+        if self.model_name in STRICT_SCHEMA_MODELS:
+            response_format = {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "sql_query_response",
+                    "strict": True,
+                    "schema": SQLQueryResponse.model_json_schema(),
+                },
+            }
+        else:
+            response_format = {"type": "json_object"}
 
         try:
             response = self.client.chat.completions.create(
@@ -155,15 +172,24 @@ class LLMService:
                     {"role": "user", "content": user_msg},
                 ],
                 temperature=0.0,
-                max_tokens=1024,
+                max_tokens=2048,
+                response_format=response_format,
             )
-            raw_llm_text = response.choices[0].message.content
-            sql_text = self.sanitize_llm_output(raw_llm_text)
+            raw_llm_text = response.choices[0].message.content or ""
+            parsed = SQLQueryResponse.model_validate_json(raw_llm_text)
+            logger.info(f"SQL reasoning: {parsed.reasoning}")
+
+            # Keep basic cleanup for any edge-case formatting inside the SQL string
+            sql_text = self.sanitize_llm_output(parsed.sql)
             return raw_llm_text, sql_text
+
+        except (ValidationError, json.JSONDecodeError) as e:
+            logger.error(f"Structured output validation failed: {e}")
+            raise LLMGenerationError(f"Schema validation error: {e}")
         except Exception as e:
             logger.error(f"Failed to generate SQL query: {e}")
             raise LLMGenerationError(f"LLM Error: {e}")
-
+            
     def generate_summary(self, user_query: str, df: Optional[pd.DataFrame], sql_text: str, retrieved: List[Dict[str, Any]]) -> str:
         """
         Generates a professional summary of the queried data and its ecological implications.
@@ -210,7 +236,7 @@ class LLMService:
                     {"role": "user", "content": user_msg},
                 ],
                 temperature=0.3,
-                max_tokens=1024,
+                max_tokens=2048,
             )
             return response.choices[0].message.content.strip()
         except Exception as e:
